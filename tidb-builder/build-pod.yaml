@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: build-pod
+spec:
+  containers:
+  - name: builder
+    image: hub.pingcap.com:30443/pingcap/tidb-builder
+    command: ["tail", "-f", "/dev/null"]
+    volumeMounts:
+    - name: varrun
+      mountPath: /var/run
+  - name: dind
+    image: hub.pingcap.com:30443/pingcap/docker:dind
+    command:
+    - dockerd
+    - --host=unix:///var/run/docker.sock
+    volumeMounts:
+    - name: varrun
+      mountPath: /var/run
+    securityContext:
+      privileged: true
+  volumes:
+  - name: varrun
+    emptyDir: {}
