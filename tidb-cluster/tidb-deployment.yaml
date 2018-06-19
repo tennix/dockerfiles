@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-tidb
+spec:
+  ports:
+  - name: mysql
+    port: 4000
+  - name: status
+    port: 10080
+  selector:
+    app: tidb
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: demo-tidb-cluster
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tidb
+  template:
+    metadata:
+      labels:
+        app: tidb
+    spec:
+      containers:
+      - name: tidb
+        image: localhost:5000/pingcap/tidb
+        command: ["/tidb-server"]
+        args:
+        - --path=$(MY_CLUSTER_NAME)-pd-client.$(MY_NAMESPACE).svc:2379
+        - --host=0.0.0.0
+        - --store=tikv
+        env:
+        - name: MY_CLUSTER_NAME
+          value: demo
+        - name: MY_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
